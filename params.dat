@@ -1,0 +1,21 @@
+2 1 2 20 6 0 0 #TOPOLOGY
+80000 #EPOCHS
+0.99 #LRATE
+0.1 #MOMENTUM
+0.0001 #EPSILON
+1 #BATCHSIZE
+0 #PERCENFORTESTING
+
+
+!---------------------------------------------------------------------
+! DEFAULT PARAMETERS
+!topology	= 2 1 2 20 5 0 0 	! 2 input units, 1 output unit, 2 hidden layers of size 20, 5
+!epochs		= 80000			! the total number of epochs
+!rate		= 0.99d0		! the learning rate
+!mo		= 0.3d0			! momemtum
+!erroradmisible	= 0.001			! the total admisible error	
+!batchsize	= 1			! batch size (sequential)
+!trozo		= 2			! half training, half testing
+!---------------------------------------------------------------------
+
+
