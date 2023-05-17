@@ -10,8 +10,8 @@ int k1, k2;
 double s;
 
 // TIMING VARIABLES
-double start_time, stop_time;
-
+clock_t start_time, stop_time;
+//clock_t	start_time, stop_time;
 // EXPERIMENT AND DATASET STRUCTURE
 int epochs; // number of epochs
 int ntrain; // number of training samples
@@ -80,7 +80,7 @@ int main(int argc, char* argv[]) {
         }
     }
     fclose(trainFile);
-    
+    start_time=clock();
     //OBTENEMOS TODOS LOS PARAMETROS DEL ARCHIVO "params.dat"
     printf("\n----NUMERO DE DATOS DE ENTRENAMIENTO----\n");
     printf("ntrain:%d\n",ntrain);
@@ -129,6 +129,8 @@ int main(int argc, char* argv[]) {
 	
 	input = dmatrix(ntrain, ni);
 	hidden = dmatrix(nh, nnh[0]);
+	for(i=0;i<nh;i++)
+     for(j=0;j<nnh[i];j++)hidden[i*nnh[i]+j]=-100.0;
 	output = dmatrix(ntrain, no);
 	target = dmatrix(ntrain, no);
 	patron = ivector(ntrain);
@@ -144,6 +146,8 @@ int main(int argc, char* argv[]) {
 	db_o = dvector(no);
 
 	delta_h = dmatrix(nh, nnh[0]);
+	for(i=0;i<nh;i++)
+     for(j=0;j<nnh[i];j++)delta_h[i*nnh[i]+j]=-100.0;
 	delta_o = dvector(no);
 	
 	//LECTURA DE DATOS DE ENTRENAMIENTO
@@ -222,12 +226,12 @@ int main(int argc, char* argv[]) {
     	for(j = 0; j < nnh[i]; j++){
         	if(i == 0){
             	for(k = 0; k < ni; k++){
-                	*(w_h + i*nnh[i]*ni + j*ni + k) = 2.0 * 1.0 / sqrt((double)ni) * (((double)rand()/(double)RAND_MAX) - 0.5);
+                	w_h[i*nnh[i]*ni + j*ni + k] = 2.0 * 1.0 / sqrt((double)ni) * (((double)rand()/(double)RAND_MAX) - 0.5);
             	}
         	} 
         	else{
             	for(k = 0; k < nnh[i - 1]; k++){
-                	*(w_h + i * nnh[i - 1] * nnh[i] + k * nnh[i] + j) = 2.0 * 1.0 / sqrt((double)nnh[i - 1]) * (((double)rand()/(double)RAND_MAX) - 0.5);
+                	w_h[i*nnh[i-1]*ni + j*nnh[i-1] + k] = 2.0 * 1.0 / sqrt((double)nnh[i - 1]) * (((double)rand()/(double)RAND_MAX) - 0.5);
             	}
         	}
     	}
@@ -240,22 +244,34 @@ int main(int argc, char* argv[]) {
 	}
 	//Initialize biases
 	for(i = 0; i < no; i++){
-		*(b_o + i) = 0.0;
-		*(db_o + i) = 0.0;
+		b_o[i] = 0.0;
+		db_o[i] = 0.0;
 	}
 	for(i = 0; i < nh; i++) {
 		for(j = 0; j < nnh[i]; j++){
-		    *(b_h + i*ni + j) = 0.0;
-		    *(db_h + i*ni + j) = 0.0;
+		    b_h[i*nnh[i] + j] = 0.0;
+		    db_h[i*nnh[i] + j] = 0.0;
 		}
+	}
+	printf("BIAS b_h INICIALIZADAS CAPA OCULTA\n");
+	for(i = 0; i < nh; i++) {
+   	for(j = 0; j < nnh[i]; j++){
+        	printf("%f\n", b_h[i*nnh[i] + j]);
+    	}
+	}
+	printf("DELTAS delta_h INICIALIZADAS CAPA OCULTA\n");
+	for(i = 0; i < nh; i++) {
+   	for(j = 0; j < nnh[i]; j++){
+        	printf("%f\n", delta_h[i*nnh[i] + j]);
+    	}
 	}
 	//Initialize error deltas
 	for(i = 0; i < no; i++){
-		*(delta_o + i) = 0.0;
+		delta_o[i] = 0.0;
 	}
 	for(i = 0; i < nh; i++){
 		for(j = 0; j < nnh[i]; j++){
-		    *(delta_h + i*ni + j) = 0.0;
+		    delta_h[i*nnh[i] + j] = 0.0;
 		}
 	}
 	//IMPRESION DE PESOS INICIALIZADOS
@@ -264,12 +280,14 @@ int main(int argc, char* argv[]) {
     	for(j = 0; j < nnh[i]; j++){
         	if(i == 0){
             	for(k = 0; k < ni; k++){
-                	printf("%lf ",*(w_h + i * nnh[i] * ni + j * ni + k));
+                	//printf("%lf ",w_h[i*nnh[i]*ni + j*ni + k]);
+                	printf("w_h[%d]: %lf ", i*nnh[i]*ni + j*ni + k, w_h[i*nnh[i]*ni + j*ni + k]);
             	}
         	} 
         	else{
-            	for(k = 0; k < nnh[i - 1]; k++){
-                	printf("%lf ", *(w_h + i * nnh[i - 1] * nnh[i] + k * nnh[i] + j));
+            	for(k = 0; k < nnh[i-1]; k++){
+                	//printf("%lf ", ,w_h[i*nnh[i - 1]*nnh[i] + k*nnh[i] + j]);
+						printf("w_h[%d]: %lf ", i*nnh[i-1]*ni + j*nnh[i-1] + k, w_h[i*nnh[i-1]*ni + j*nnh[i-1] + k]);
             	}
         	}
         	printf("\n");
@@ -290,9 +308,7 @@ int main(int argc, char* argv[]) {
 	///////////////////////
 /////////START TRAINING//////////////////////////////////////////
 	///////////////////////
-
 	srand(343343198);
-	
 	printf("rate = %lf\n", rate);
 	printf("epochs = %d\n", epochs);
 	//EPOCHS LOOP////////////////////////////////////////////////
@@ -321,7 +337,7 @@ int main(int argc, char* argv[]) {
         		// FIRST HIDDEN LAYER IS SPECIAL
         		for(k = 0; k < nh; k++){ // nh IS THE NUMBER OF HIDDEN LAYER
        			for(i = 0; i < nnh[k]; i++){ //nnh IS THE NUMBER OF NEURONS IN THE k HIDDEN LAYER
-       				s = *(b_h + i + k * nnh[k]); // THE BIAS
+       				s = b_h[i + k*nnh[k]]; // THE BIAS
        				if(k == 0){ // THE FIRST HIDDEN LAYER IS SPECIAL
 							for(j = 0; j < ni; j++){ // GO THROUGH ALL THE NEURONS IN THE INPUT LAYER
 								s += *(input + j + x * ni) * *(w_h + j + i * ni + k * ni * nnh[k]); //SUM THE PRODUCT OF THE INPUT BY THE WEIGHT. THE BIAS HAS BEEN ADDED
@@ -360,15 +376,27 @@ int main(int argc, char* argv[]) {
 						// CALCULATE DELTAS IN ALL THE HIDDEN LAYERS BUT THE FIRST
 						s = 0.0;
 						if(k == nh-1){ // then THE LAST HIDDEN LAYERS
-							for(j = 0; j < no; j++) 
-								s += *(w_o + i + j * no) * *(delta_o + j);
+							for(j = 0; j < no; j++){ 
+								s += w_o[i + j*no] * delta_o[j];
+								//printf("Value of s LAST HIDDEN LAYER: %f\n", s);
+								}
 						}
 						else{ // THE REST OF THE HIDDEN LAYERS
-							for(j = 0; j < nnh[k+1]; j++)
-								s += *(w_h + (k+1)*nnh[k+1]*nnh[k+1] + j*nnh[k+1] + i) * *(delta_h + (k+1)*nnh[k+1] + j);
+							for(j = 0; j < nnh[k+1]; j++){
+								s += w_h[(k+1)*nnh[k+1]*nnh[k+1] + j*nnh[k+1] + i] * delta_h[(k+1)*nnh[k+1] + j];
+								double wh_value = w_h[(k+1)*nnh[k+1]*nnh[k+1] + j*nnh[k+1] + i];
+								double delta_value = delta_h[(k+1)*nnh[k+1] + j];
+								//printf("w_h[%d]: %f\n", (k+1)*nnh[k+1]*nnh[k+1] + j*nnh[k+1] + i, wh_value);
+								//printf("delta_h[%d]: %f\n", (k+1)*nnh[k+1] + j, delta_value);
+								//printf("Value of s REST HIDDEN LAYERS: %f\n", s);
+								}
 						}
-						*(delta_h + k*nnh[k] + i) = s * *(hidden + k*nnh[k] + i) * (1.0 - *(hidden + k*nnh[k] + i));
-						*(db_h + k*nnh[k] + i) = rate * *(delta_h + k*nnh[k] + i) +	mo * *(db_h + k*nnh[k] + i);
+						delta_h[k*nnh[k] + i] = s * hidden[k*nnh[k] + i] * (1.0 - hidden[k*nnh[k] + i]);
+						//printf("delta_h[%d]: %f\n", k*nnh[k] + i, delta_h[k*nnh[k] + i]);
+
+						db_h[k*nnh[k] + i] = rate * delta_h[k*nnh[k] + i] + mo*db_h[k*nnh[k] + i];
+						//printf("db_h[%d]: %f\n", k*nnh[k] + i, db_h[k*nnh[k] + i]);
+
 						if(k == 0){ // THE FIRST HIDDEN LAYER
 							for(j = 0; j < ni; j++)							
 								dw_h[k*ni*nnh[k] + i*ni + j] = rate*input[x*ni + j]*delta_h[k*nnh[k] + i]*0.5-mo*dw_h[k*ni*nnh[k] + i*ni + j]; // THIS IS NOT STANDARD
@@ -386,6 +414,8 @@ int main(int argc, char* argv[]) {
 				for(k = 0; k < nh; k++){
 					for(i = 0; i < nnh[k]; i++){
 						b_h[k*nnh[k] + i] = b_h[k*nnh[k] + i] - db_h[k*nnh[k] + i];
+						//printf("b_h[%d]: %f\n", k*nnh[k] + i, b_h[k*nnh[k] + i]);
+
 						if(k==0){
 							for(j = 0; j < ni; j++)
 								w_h[j + i*ni + k*ni*nnh[k]];
@@ -481,31 +511,38 @@ int main(int argc, char* argv[]) {
 	// ONCE FINISHED TRAINING, WRITE DOWN THE NN WEIGHTS FOR VALIDATION, ANALYSES AND REUSE
 	
 	FILE *fweights=fopen("./weights/weightsC.txt","w");
-	/*
+	//fprintf(fweights,"Pesos capas ocultas\n");
 	for(i= 0; i<nh;i++){
 	  	for(j= 0;j<nnh[i];j++){
 		  	if(i==0){
 		     	for(k= 0;k<ni;k++) fprintf(fweights, "%f\n", w_h[i*nnh[i]*ni + j*ni + k]);
 		  	}
 		  	else
-		    	for(k= 0;k<nnh[i-1];k++) fprintf(fweights, "%f\n", w_h[i*nnh[i-1]*nnh[i] + k*nnh[i] + j]);			
+		    	for(k= 0;k<nnh[i-1];k++) fprintf(fweights, "%f\n", w_h[i*nnh[i-1]*ni + j*nnh[i-1] + k]);			
 	  	}
-	}*/
+	}
+	//fprintf(fweights,"BIAS capas ocultas\n");
 	for(i = 0; i < nh; i++) {
    	for(j = 0; j < nnh[i]; j++){
         	fprintf(fweights, "%f\n", b_h[i*nnh[i] + j]);
     	}
-	}/*
+	}
+	//fprintf(fweights,"Pesos capas salida\n");
 	for(i = 0; i < nnh[nh-1]; i++){
     	for (j = 0; j < no; j++){
         	fprintf(fweights, "%f\n", w_o[i*no + j]);
     	}
-	}/*
+	}
+	//fprintf(fweights,"BIAS capas salida\n");
 	for(i = 0; i < no; i++){
     	fprintf(fweights, "%f\n", b_o[i]);
 	}
-	*/
+	
 	fclose(fweights);
+	
+	stop_time=clock();
+	double time_taken = ((double)stop_time- start_time)/CLOCKS_PER_SEC; // in seconds
+ 	printf("train tooks %f seconds to execute \n", time_taken);
 		
    return 0;
 }
