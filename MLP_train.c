@@ -422,13 +422,13 @@ int main(int argc, char* argv[]) {
 
 						if(k==0){
 							for(j = 0; j < ni; j++){
-								w_h[j + i*ni + k*ni*nnh[k]];
+								w_h[j + i*ni + k*ni*nnh[k]] = w_h[j + i*ni + k*ni*nnh[k]] - dw_h[j + i*ni + k*ni*nnh[k]];
 								//printf("w_h[%d]: %lf \n", j + i*ni + k*ni*nnh[k], w_h[j + i*ni + k*ni*nnh[k]]);
 							}
 						}
 						else{
 							for(j = 0; j < nnh[k-1]; j++){
-								w_h[k*nnh[k-1]*ni + i*nnh[k-1] + j];
+								w_h[k*nnh[k-1]*ni + i*nnh[k-1] + j] = w_h[k*nnh[k-1]*ni + i*nnh[k-1] + j] - dw_h[k*nnh[k-1]*ni + i*nnh[k-1] + j];  
 								//printf("w_h[%d]: %lf \n", k*nnh[k-1]*ni + i*nnh[k-1] + j, w_h[k*nnh[k-1]*ni + i*nnh[k-1] + j]);
 							}
 						}
