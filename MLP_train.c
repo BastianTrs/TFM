@@ -130,7 +130,7 @@ int main(int argc, char* argv[]) {
 	input = dmatrix(ntrain, ni);
 	hidden = dmatrix(nh, nnh[0]);
 	for(i=0;i<nh;i++)
-     for(j=0;j<nnh[i];j++)hidden[i*nnh[i]+j]=-100.0;
+     for(j=0;j<nnh[i];j++)hidden[i*nnh[0]+j]=-100.0;
 	output = dmatrix(ntrain, no);
 	target = dmatrix(ntrain, no);
 	patron = ivector(ntrain);
@@ -139,7 +139,11 @@ int main(int argc, char* argv[]) {
 	dw_h = (double*) malloc(nh * nnh[0] * nnh[0] * sizeof(double));
 	
 	b_h = dmatrix(nh, nnh[0]);
+	for(i=0;i<nh;i++)
+     for(j=0;j<nnh[i];j++)b_h[i*nnh[i]+j]=-100.0;
 	db_h = dmatrix(nh, nnh[0]);
+	for(i=0;i<nh;i++)
+     for(j=0;j<nnh[i];j++)db_h[i*nnh[i]+j]=-100.0;
 	w_o = dmatrix(nnh[nh-1], no);
 	dw_o = dmatrix(nnh[nh-1], no);
 	b_o = dvector(no);
@@ -206,18 +210,20 @@ int main(int argc, char* argv[]) {
 	printf("INPUT:\n");
 	for(i = 0; i < ntrain; i++) {
 		for(j = 0; j < ni; j++) {
-		    printf("%f ", input[i*ni + j]);
-		}
-		printf("\n");
-	}
-	printf("\nTARGET:\n");
-	for(i = 0; i < ntrain; i++) {
-		for(j = 0; j < no; j++) {
-		    printf("%f ", target[i*no + j]);
+		    printf("input[%d]:%lf ",i*ni + j, input[i*ni + j]);
 		}
 		printf("\n");
 	}
 	*/
+	/*
+	printf("\nTARGET:\n");
+	for(i = 0; i < ntrain; i++) {
+		for(j = 0; j < no; j++) {
+		    printf("%lf ", target[i*no + j]);
+		}
+		printf("\n");
+	}*/
+	
 	printf("\n----INICIALIZACION DE PESOS----\n");
 	//Initialize weights between input layer and hidden layer
 	//INICIALIZACION CON VALORES ENTRE [-0.5 , 0,5]
@@ -239,7 +245,7 @@ int main(int argc, char* argv[]) {
 	//Initialize weights between hidden layer and output layer
 	for(i = 0; i < no; i++){
 		for(j = 0; j < nnh[nh-1]; j++){
-		    *(w_o + j*no + i) = 2.0*1.0/sqrt(nnh[nh-1])*(((double)rand()/(double)RAND_MAX) - 0.5);
+		    w_o[i*nnh[nh-1]+j] = 2.0*1.0/sqrt(nnh[nh-1])*(((double)rand()/(double)RAND_MAX) - 0.5);
 		}
 	}
 	//Initialize biases
@@ -249,21 +255,11 @@ int main(int argc, char* argv[]) {
 	}
 	for(i = 0; i < nh; i++) {
 		for(j = 0; j < nnh[i]; j++){
-		    b_h[i*nnh[i] + j] = 0.0;
-		    db_h[i*nnh[i] + j] = 0.0;
+		    b_h[i*nnh[0] + j] = 0.0;
+		    db_h[i*nnh[0] + j] = 0.0;
+		    //printf("b_h[%d]: %lf \n", i*nnh[0] + j, b_h[i*nnh[0] + j]);
+		    //printf("db_h[%d]: %lf \n", i*nnh[0] + j, db_h[i*nnh[0] + j]);
 		}
-	}
-	printf("BIAS b_h INICIALIZADAS CAPA OCULTA\n");
-	for(i = 0; i < nh; i++) {
-   	for(j = 0; j < nnh[i]; j++){
-        	printf("%f\n", b_h[i*nnh[i] + j]);
-    	}
-	}
-	printf("DELTAS delta_h INICIALIZADAS CAPA OCULTA\n");
-	for(i = 0; i < nh; i++) {
-   	for(j = 0; j < nnh[i]; j++){
-        	printf("%f\n", delta_h[i*nnh[i] + j]);
-    	}
 	}
 	//Initialize error deltas
 	for(i = 0; i < no; i++){
@@ -271,7 +267,8 @@ int main(int argc, char* argv[]) {
 	}
 	for(i = 0; i < nh; i++){
 		for(j = 0; j < nnh[i]; j++){
-		    delta_h[i*nnh[i] + j] = 0.0;
+		    delta_h[i*nnh[0] + j] = 0.0;
+		    //printf("delta_h[%d]: %lf \n", i*nnh[0] + j, delta_h[i*nnh[0] + j]);
 		}
 	}
 	//IMPRESION DE PESOS INICIALIZADOS
@@ -298,7 +295,8 @@ int main(int argc, char* argv[]) {
 	for(i = 0; i < no; i++){
 		printf("Pesos de la capa oculta y la de salida\n");
 		for(j = 0; j < nnh[nh-1]; j++){
-		    printf("%lf ", *(w_o + j*no + i));
+		    //printf("%lf ", w_o[j*no + i]);
+		    printf("w_o[%d]: %lf ", i*nnh[nh-1]+j, w_o[i*nnh[nh-1]+j]);
 		}
 		printf("\n");
 	}
@@ -309,6 +307,7 @@ int main(int argc, char* argv[]) {
 /////////START TRAINING//////////////////////////////////////////
 	///////////////////////
 	srand(343343198);
+	//epochs = 1;
 	printf("rate = %lf\n", rate);
 	printf("epochs = %d\n", epochs);
 	//EPOCHS LOOP////////////////////////////////////////////////
@@ -333,41 +332,45 @@ int main(int argc, char* argv[]) {
 		for(batch = 0; batch < batchnumber-trozo; batch++){ // TRAINING DATA IS SPLIT INTO TRAINING AND TESTING
     		for(dum = 0; dum < batchsize; dum++){ // EACH TIME WE DO THIS IS AN ITERATION
         		x = patron[dum+(batch)*batchsize]; // CASES LOOP
+        		//printf("x:%d\n",x);
         		// GO THROUGH THE NETWORK FROM INPUT TO OUTPUT
         		// FIRST HIDDEN LAYER IS SPECIAL
         		for(k = 0; k < nh; k++){ // nh IS THE NUMBER OF HIDDEN LAYER
        			for(i = 0; i < nnh[k]; i++){ //nnh IS THE NUMBER OF NEURONS IN THE k HIDDEN LAYER
-       				s = b_h[i + k*nnh[k]]; // THE BIAS
+       				s = b_h[i + k*nnh[0]]; // THE BIAS
        				if(k == 0){ // THE FIRST HIDDEN LAYER IS SPECIAL
 							for(j = 0; j < ni; j++){ // GO THROUGH ALL THE NEURONS IN THE INPUT LAYER
-								s += *(input + j + x * ni) * *(w_h + j + i * ni + k * ni * nnh[k]); //SUM THE PRODUCT OF THE INPUT BY THE WEIGHT. THE BIAS HAS BEEN ADDED
+								s += input[j + x * ni] * w_h[j + i*ni + k*ni*nnh[k]]; //SUM THE PRODUCT OF THE INPUT BY THE WEIGHT. THE BIAS HAS BEEN ADDED
 							}
 						} 
 						else{ // i.e. IF IT IS NOT THE FIRST HIDDEN LAYER THEN
 							for(j = 0; j < nnh[k-1]; j++){ // GO THROUGH ALL THE NEURONS IN THE PERVIOUS HIDDEN LAYER
-								s += *(hidden + j + (k-1)*nnh[k-1]) * *(w_h + k*nnh[k]*nnh[k] + j*nnh[k] + i); // SUM THE PRODUCT OF THE PREVIOUS LAYER VALUE IN THE HIDDEN LAYER UNITS
+								s += hidden[j + (k-1)*nnh[0]] * w_h[k*nnh[k-1]*ni + i*nnh[k-1] + j]; // SUM THE PRODUCT OF THE PREVIOUS LAYER VALUE IN THE HIDDEN LAYER UNITS
 							}
 						}
-						*(hidden + i + k *nnh[k]) = sigmoid(s); // APPLY THE ACTIVATION FUNCTION TO GET THE ACTUAL VALUE IN THE HIDDEN LAYER UNITS
+						hidden[i + k*nnh[0]] = sigmoid(s); // APPLY THE ACTIVATION FUNCTION TO GET THE ACTUAL VALUE IN THE HIDDEN LAYER UNITS
         			}
         		}
         		// COMPUTE OUTPUT NEURON ACTIVATIONS FOR THE OUTPUT
         		for(k=0; k < no; k++){
 					s = *(b_o + k); // THE BIAS
 					for(j=0; j < nnh[nh-1]; j++){ // nh-1 is the LAST H LAYER, nnh(nh-1) IS THE no OF NEURONS in the last H LAYER
-						s += *(hidden + (nh-1)*nnh[nh-1] + j) * *(w_o + j*no + k); // SUM THE PRODUCT OF THE VALUE IN THE LAST HIDDEN NEURONS BY THE WEIGHTS
+						s += hidden[(nh-1)*nnh[0] + j] * w_o[j + k*nnh[nh-1]]; // SUM THE PRODUCT OF THE VALUE IN THE LAST HIDDEN NEURONS BY THE WEIGHTS
+						//printf("w_o[%d]:%lf\n",j+k*nnh[nh-1], w_o[j+k*nnh[nh-1]]);
 					}
-					*(output + k + x * no) = sigmoid(s); // APPLY THE ACTIVATION FUNCTION
+					output[k + x*no] = sigmoid(s); // APPLY THE ACTIVATION FUNCTION
+					//printf("output[%d]:%lf\n",k + x*no, output[k + x*no]);
 				}
 				//------------------------------------------------------------------ THE BACKPROP ALGORITHM
 				// BACKPROP
 				
 				// WEIGHTS & BIAS CHANGES IN THE OUTPUT LAYER
 				for(k=0; k < no; k++){
-					*(delta_o + k) = *(output + k + x * no) - *(target + k + x * no);
-					*(db_o + k) = *(delta_o + k);
+					delta_o[k] = output[k + x*no] - target[k + x*no];
+					//printf("delta_o[%d]:%lf = output[%d]:%lf - target[%d]:%lf\n",k,delta_o[k],k + x*no,output[k + x*no],k + x*no,target[k + x*no]);
+					db_o[k] = delta_o[k];
 					for(j=0; j < nnh[nh-1]; j++) 
-						*(dw_o + j + k*nnh[nh-1]) = *(delta_o + k) * *(hidden + (nh-1)*nnh[nh-1] + j);
+						dw_o[j + k*nnh[nh-1]] = delta_o[k] * hidden[(nh-1)*nnh[0] + j];
 				}
 				
 				// WEIGHT & BIAS CHANGES IN THE HIDDEN LAYERS
@@ -383,27 +386,28 @@ int main(int argc, char* argv[]) {
 						}
 						else{ // THE REST OF THE HIDDEN LAYERS
 							for(j = 0; j < nnh[k+1]; j++){
-								s += w_h[(k+1)*nnh[k+1]*nnh[k+1] + j*nnh[k+1] + i] * delta_h[(k+1)*nnh[k+1] + j];
-								double wh_value = w_h[(k+1)*nnh[k+1]*nnh[k+1] + j*nnh[k+1] + i];
-								double delta_value = delta_h[(k+1)*nnh[k+1] + j];
-								//printf("w_h[%d]: %f\n", (k+1)*nnh[k+1]*nnh[k+1] + j*nnh[k+1] + i, wh_value);
-								//printf("delta_h[%d]: %f\n", (k+1)*nnh[k+1] + j, delta_value);
-								//printf("Value of s REST HIDDEN LAYERS: %f\n", s);
+									s += w_h[(k+1)*ni*nnh[k]+j*nnh[k]+i] * delta_h[(k+1)*nnh[0]+j];
+									//double wh_value = w_h[(k+1)*ni*nnh[k]+j*nnh[k]+i];
+									//double delta_value = delta_h[(k+1)*nnh[0] + j];
+									//printf("w_h[%d]: %f\n", (k+1)*ni*nnh[k]+j*nnh[k]+i, wh_value);
+									//printf("internodelta_h[%d]: %f\n", (k+1)*nnh[0] + j, delta_value);
+									//printf("Value of s REST HIDDEN LAYERS: %f\n", s);
 								}
 						}
-						delta_h[k*nnh[k] + i] = s * hidden[k*nnh[k] + i] * (1.0 - hidden[k*nnh[k] + i]);
-						//printf("delta_h[%d]: %f\n", k*nnh[k] + i, delta_h[k*nnh[k] + i]);
+						delta_h[k*nnh[0] + i] = s * hidden[k*nnh[0] + i] * (1.0 - hidden[k*nnh[0] + i]);
+						//printf("delta_h[%d]: %f\n", k*nnh[0] + i, delta_h[k*nnh[0] + i]);
 
-						db_h[k*nnh[k] + i] = rate * delta_h[k*nnh[k] + i] + mo*db_h[k*nnh[k] + i];
+						db_h[k*nnh[0] + i] = rate * delta_h[k*nnh[0] + i] + mo*db_h[k*nnh[0] + i];
 						//printf("db_h[%d]: %f\n", k*nnh[k] + i, db_h[k*nnh[k] + i]);
 
 						if(k == 0){ // THE FIRST HIDDEN LAYER
 							for(j = 0; j < ni; j++)							
-								dw_h[k*ni*nnh[k] + i*ni + j] = rate*input[x*ni + j]*delta_h[k*nnh[k] + i]*0.5-mo*dw_h[k*ni*nnh[k] + i*ni + j]; // THIS IS NOT STANDARD
+								dw_h[j + i*ni + k*ni*nnh[k]] = rate*input[x*ni+j]*delta_h[k*nnh[0] + i]*0.5-mo*dw_h[j + i*ni + k*ni*nnh[k]]; // THIS IS NOT STANDARD
 						}
 						else{
 							for(j = 0; j < nnh[k-1]; j++){
-								dw_h[k*nnh[k]*nnh[k] + i*nnh[k] + j] = rate*hidden[(k-1)*nnh[k-1] + j]*delta_h[k*nnh[k] + i]*0.5-mo*dw_h[k*ni*nnh[k] + i*ni + j]; // THIS IS NOT STANDARD
+								dw_h[k*nnh[k-1]*ni+i*nnh[k-1]+j] = rate*hidden[(k-1)*nnh[0]+j]*delta_h[k*nnh[0] + i]*0.5-mo*dw_h[k*nnh[k-1]*ni + i*nnh[k-1] + j]; // THIS IS NOT STANDARD
+								//printf("dw_h[%d]: %lf \n", k*nnh[k-1]*ni + i*nnh[k-1] + j, dw_h[k*nnh[k-1]*ni + i*nnh[k-1] + j]);
 							}
 						}
 					}		
@@ -413,16 +417,20 @@ int main(int argc, char* argv[]) {
 				// HIDDEN LAYERS
 				for(k = 0; k < nh; k++){
 					for(i = 0; i < nnh[k]; i++){
-						b_h[k*nnh[k] + i] = b_h[k*nnh[k] + i] - db_h[k*nnh[k] + i];
+						b_h[k*nnh[0] + i] = b_h[k*nnh[0] + i] - db_h[k*nnh[0] + i];
 						//printf("b_h[%d]: %f\n", k*nnh[k] + i, b_h[k*nnh[k] + i]);
 
 						if(k==0){
-							for(j = 0; j < ni; j++)
+							for(j = 0; j < ni; j++){
 								w_h[j + i*ni + k*ni*nnh[k]];
+								//printf("w_h[%d]: %lf \n", j + i*ni + k*ni*nnh[k], w_h[j + i*ni + k*ni*nnh[k]]);
+							}
 						}
 						else{
-							for(j = 0; j < nnh[k]; j++)
-								w_h[k*nnh[k]*nnh[k] + j*nnh[k] + i];
+							for(j = 0; j < nnh[k-1]; j++){
+								w_h[k*nnh[k-1]*ni + i*nnh[k-1] + j];
+								//printf("w_h[%d]: %lf \n", k*nnh[k-1]*ni + i*nnh[k-1] + j, w_h[k*nnh[k-1]*ni + i*nnh[k-1] + j]);
+							}
 						}
 					}
 				}
@@ -441,38 +449,41 @@ int main(int argc, char* argv[]) {
      !-----------------------------------------------------------------------------------------------------
      ! CHECK MATCH WITH ALL THE DATA at EACH EPOCH - TRANSVERSE NET and CALCULATE sse1
      */
-     /*
+     
 		sse1 = 0.0;
 		for (xx = 0; xx < batchnumber; xx++) {
     		for (k = 0; k < nh; k++) {
         		for (i = 0; i < nnh[k]; i++) {
-            	s = b_h[k*nnh[k] + i];
+            	s = b_h[k*nnh[0] + i];
             	if (k == 0) {
-               	for (j = 0; j < ni; j++)
-                    s += input[xx*ni + j] * w_h[k*ni*nnh[k] + j*nnh[k] + i];
+               	for (j = 0; j < ni; j++){
+                    s += input[xx*ni + j] * w_h[j + i*ni + k*ni*nnh[k]];	
+                    //printf("input[%d]: %lf \n", xx*ni + j, input[xx*ni + j]);
+                  }
             	} 
             	else {
-               	for (j = 0; j < nnh[k-1]; j++)
-                    s += hidden[(k-1)*nnh[k-1] + j] * w_h[k*nnh[k-1]*nnh[k] + j*nnh[k] + i];
+               	for (j = 0; j < nnh[k-1]; j++){
+                    s += hidden[(k-1)*nnh[0] + j] * w_h[k*nnh[k-1]*ni + i*nnh[k-1] + j];
+                    //printf("hidden[%d]: %lf \n", (k-1)*nnh[0] + j, hidden[(k-1)*nnh[0] + j]);
+                  }
             	}
-            	hidden[k*nnh[k] + i] = sigmoid(s);
+            	hidden[k*nnh[0] + i] = sigmoid(s);
         		}
     		}
     		for (k = 0; k < no; k++) {
         		s = b_o[k];
         		for (j = 0; j < nnh[nh-1]; j++)
-            	s += hidden[(nh-1)*nnh[nh-1] + j] * w_o[j*no + k];
+            	s += hidden[(nh-1)*nnh[0] + j] * w_o[j + k*nnh[nh-1]];
         		output[xx*no + k] = sigmoid(s);
         		sse1 += (output[xx*no + k] - target[xx*no + k]) * (output[xx*no + k] - target[xx*no + k]);
     		}
 		}
 		sse1 = sse1 / batchnumber;
-		*/
 		/*
      	!-----------------------------------------------------------------------------------------
      	! CHECK MATCH WITH JUST THE TESTING DATA at EACH EPOCH - TRANSVERSE NET and CALCULATE sse2
      	*/
-     	/*
+     	
      	sse2 = 0.0;
 		for (xx = batchnumber - trozo - 1; xx < batchnumber; xx++) {
 			 for (k = 0; k < nh; k++) {
@@ -480,11 +491,11 @@ int main(int argc, char* argv[]) {
 				      s = b_h[k*nnh[k] + i];
 				      if (k == 0) {
 				          for (j = 0; j < ni; j++)
-				              s += input[xx*ni + j] * w_h[k*ni*nnh[k] + j*nnh[k] + i];
+				              s += input[xx*ni + j] * w_h[j + i*ni + k*ni*nnh[k]];
 				      } 
 				      else {
 				          for (j = 0; j < nnh[k-1]; j++)
-				              s += hidden[(k-1)*nnh[k] + j] * w_h[k*nnh[k]*nnh[k] + j*nnh[k] + i];
+				              s += hidden[(k-1)*nnh[k] + j] * w_h[k*nnh[k-1]*ni + i*nnh[k-1] + j];
 				      }
 				      hidden[k*nnh[k] + i] = sigmoid(s);
 				  }
@@ -498,13 +509,12 @@ int main(int argc, char* argv[]) {
 			 }
 		}
 		sse2 = sse2 / trozo;
-		*/
 		/*
     	!-----------------------------------------------------------------------------------------
     	! ERROR COMPARISON -----------------------------------------------------------------------
     	! IF THE SSE1 IS BELOW THE THRESHOLD, STOP TRAINING. EXIT EPOCHS
     	*/
-     	//if (sse1<erroradmisible) break;  //jjpm  Salgo del bucle. Cambiado el goto por este break goto 669
+     	if (sse1<erroradmisible) break;  //jjpm  Salgo del bucle. Cambiado el goto por este break goto 669
     	if (ep%10000==0)  printf("%8s %8i %11s %8.5f %12s %7.5f\n","Epochee: ",ep,"SSE(train):", sse1,"SSE(test):",sse2);
 	}
 	// END LOOP EPOCHs
@@ -524,13 +534,14 @@ int main(int argc, char* argv[]) {
 	//fprintf(fweights,"BIAS capas ocultas\n");
 	for(i = 0; i < nh; i++) {
    	for(j = 0; j < nnh[i]; j++){
-        	fprintf(fweights, "%f\n", b_h[i*nnh[i] + j]);
+        	fprintf(fweights, "%f\n", b_h[i*nnh[0] + j]);
     	}
 	}
 	//fprintf(fweights,"Pesos capas salida\n");
 	for(i = 0; i < nnh[nh-1]; i++){
     	for (j = 0; j < no; j++){
         	fprintf(fweights, "%f\n", w_o[i*no + j]);
+        	//printf("w_o[%d]=%f\n",i*no + j, w_o[i*no + j]);
     	}
 	}
 	//fprintf(fweights,"BIAS capas salida\n");
